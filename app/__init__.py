@@ -9,6 +9,6 @@ def create_app():
     app = Flask(__name__)
     Swagger(app, template_file='docs/swagger.yml')  
 
-    app.register_blueprint(image_bp, url_prefix='/api/images')
+    app.register_blueprint(image_bp, url_prefix='/pets/images')
 
     return app
