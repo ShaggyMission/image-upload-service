@@ -1,6 +1,6 @@
 from flask import Flask
 from flasgger import Swagger
-from flask_cors import CORS  # ✅ Importa CORS
+from flask_cors import CORS 
 from .config import load_env_vars
 from .routes.image_routes import image_bp
 
