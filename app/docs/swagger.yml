@@ -1,29 +1,271 @@
-swagger: "2.0"
+openapi: 3.0.0
 info:
-  title: Image Upload API
-  description: API for uploading images to AWS S3
-  version: "1.0"
+  title: Image Upload API - Shaggy Mission
+  version: 1.0.0
+  description: >
+    This API provides secure image upload functionality for the Shaggy Mission platform.  
+    Allows uploading multiple pet images to AWS S3 storage with automatic file validation  
+    and secure filename handling. Perfect for pet adoption profiles, rescue documentation,  
+    and veterinary records.  
+    **Multiple images can be uploaded simultaneously in a single request.**  
+    All uploaded files are stored securely in AWS S3 and return publicly accessible URLs.
 
-basePath: /api/images
-schemes:
-  - http
+servers:
+  - url: http://localhost:5000
+    description: Development server
 
 paths:
-  /upload:
+  /pets/images/upload:
     post:
-      summary: Upload an image
-      consumes:
-        - multipart/form-data
-      parameters:
-        - in: formData
-          name: image
-          type: file
-          required: true
-          description: The image file to upload
+      summary: Upload multiple pet images to S3
+      description: >
+        Uploads one or more pet images to AWS S3 storage.  
+        Each image is processed with secure filename handling and uploaded to S3.  
+        Returns an array of publicly accessible URLs for the uploaded images.  
+        Supports common image formats (JPEG, PNG, GIF, WebP).  
+        Maximum file size and format validation is handled by the S3 service.
+      tags:
+        - Image Upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - images
+              properties:
+                images:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                  description: >
+                    One or more image files to upload. Supported formats: JPEG, PNG, GIF, WebP.  
+                    **Required field.** At least one image file must be provided.
+            examples:
+              single_image:
+                summary: Upload single image
+                description: Example of uploading a single pet image
+                value:
+                  images: ["pet_photo.jpg"]
+              multiple_images:
+                summary: Upload multiple images
+                description: Example of uploading multiple pet images
+                value:
+                  images: ["pet_photo1.jpg", "pet_photo2.png", "pet_photo3.jpeg"]
       responses:
-        201:
-          description: Image uploaded successfully
-        400:
-          description: No image provided
-        500:
-          description: Internal server error
+        '201':
+          description: Images uploaded successfully to S3
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    description: Indicates successful upload operation
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      imageUrls:
+                        type: array
+                        items:
+                          type: string
+                          format: uri
+                        description: Array of publicly accessible S3 URLs for uploaded images
+                        example: 
+                          - "https://shaggy-mission-bucket.s3.amazonaws.com/images/secure_filename_1.jpg"
+                          - "https://shaggy-mission-bucket.s3.amazonaws.com/images/secure_filename_2.png"
+              examples:
+                single_image_success:
+                  summary: Single image upload success
+                  value:
+                    success: true
+                    data:
+                      imageUrls:
+                        - "https://shaggy-mission-bucket.s3.amazonaws.com/images/rescued_dog_123.jpg"
+                multiple_images_success:
+                  summary: Multiple images upload success
+                  value:
+                    success: true
+                    data:
+                      imageUrls:
+                        - "https://shaggy-mission-bucket.s3.amazonaws.com/images/golden_retriever_001.jpg"
+                        - "https://shaggy-mission-bucket.s3.amazonaws.com/images/golden_retriever_002.png"
+                        - "https://shaggy-mission-bucket.s3.amazonaws.com/images/golden_retriever_003.jpeg"
+        '400':
+          description: Bad Request – No images provided or invalid files
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                no_images:
+                  summary: No images provided
+                  value:
+                    success: false
+                    error: "No image files provided"
+                empty_files:
+                  summary: Empty file list
+                  value:
+                    success: false
+                    error: "No image files provided"
+                invalid_format:
+                  summary: Invalid file format
+                  value:
+                    success: false
+                    error: "Invalid file format. Only images are allowed"
+        '413':
+          description: Payload Too Large – File size exceeds limit
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                file_too_large:
+                  summary: File size limit exceeded
+                  value:
+                    success: false
+                    error: "File size exceeds maximum limit"
+        '500':
+          description: Internal Server Error – S3 upload failure or server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                s3_upload_error:
+                  summary: S3 upload failure
+                  value:
+                    success: false
+                    error: "Failed to upload image to S3 storage"
+                server_error:
+                  summary: Internal server error
+                  value:
+                    success: false
+                    error: "Internal server error occurred"
+                aws_credentials_error:
+                  summary: AWS credentials error
+                  value:
+                    success: false
+                    error: "AWS credentials not configured properly"
+
+components:
+  schemas:
+    ImageUploadRequest:
+      type: object
+      required:
+        - images
+      properties:
+        images:
+          type: array
+          items:
+            type: string
+            format: binary
+          description: Array of image files to upload
+          minItems: 1
+          maxItems: 10
+    
+    ImageUploadResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Indicates if the upload operation was successful
+          example: true
+        data:
+          type: object
+          properties:
+            imageUrls:
+              type: array
+              items:
+                type: string
+                format: uri
+              description: Array of S3 URLs for uploaded images
+              example:
+                - "https://shaggy-mission-bucket.s3.amazonaws.com/images/pet_image_1.jpg"
+                - "https://shaggy-mission-bucket.s3.amazonaws.com/images/pet_image_2.png"
+      required:
+        - success
+        - data
+    
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          description: Always false for error responses
+          example: false
+        error:
+          type: string
+          description: Error message describing what went wrong
+          example: "No image files provided"
+      required:
+        - success
+        - error
+    
+    S3ImageUrl:
+      type: string
+      format: uri
+      description: Publicly accessible S3 URL for an uploaded image
+      example: "https://shaggy-mission-bucket.s3.amazonaws.com/images/rescued_pet_12345.jpg"
+      pattern: "^https://[a-zA-Z0-9.-]+\\.s3\\.amazonaws\\.com/.+\\.(jpg|jpeg|png|gif|webp)$"
+
+  examples:
+    SingleImageUpload:
+      summary: Upload single pet image
+      description: Example of uploading a single image for a pet profile
+      value:
+        images: ["golden_retriever_profile.jpg"]
+    
+    MultipleImageUpload:
+      summary: Upload multiple pet images
+      description: Example of uploading multiple images for a pet adoption listing
+      value:
+        images: 
+          - "pet_front_view.jpg"
+          - "pet_side_view.png"
+          - "pet_playing.jpeg"
+    
+    SuccessfulSingleUpload:
+      summary: Successful single image upload
+      description: Response after successfully uploading one image
+      value:
+        success: true
+        data:
+          imageUrls:
+            - "https://shaggy-mission-bucket.s3.amazonaws.com/images/rescued_dog_001.jpg"
+    
+    SuccessfulMultipleUpload:
+      summary: Successful multiple image upload
+      description: Response after successfully uploading multiple images
+      value:
+        success: true
+        data:
+          imageUrls:
+            - "https://shaggy-mission-bucket.s3.amazonaws.com/images/cat_profile_001.jpg"
+            - "https://shaggy-mission-bucket.s3.amazonaws.com/images/cat_profile_002.png"
+            - "https://shaggy-mission-bucket.s3.amazonaws.com/images/cat_profile_003.jpeg"
+
+  requestBodies:
+    ImageUploadRequestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            $ref: '#/components/schemas/ImageUploadRequest'
+          examples:
+            single_image:
+              $ref: '#/components/examples/SingleImageUpload'
+            multiple_images:
+              $ref: '#/components/examples/MultipleImageUpload'
+
+tags:
+  - name: Image Upload
+    description: >
+      Operations related to uploading and managing pet images.  
+      Provides secure upload functionality to AWS S3 with automatic  
+      filename sanitization and publicly accessible URL generation.  
+      Perfect for pet adoption profiles and rescue documentation.
