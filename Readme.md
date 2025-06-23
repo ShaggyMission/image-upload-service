@@ -83,7 +83,7 @@ Form Data:
 ```
 
 ### API Documentation Endpoint
-**`GET /apidocs/`**
+**`GET /pets/imagesUpload-docs`**
 - Interactive Swagger UI documentation
 - Complete API specification with request/response examples
 - Built-in testing interface for upload operations
