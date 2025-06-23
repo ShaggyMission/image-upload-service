@@ -9,7 +9,12 @@ def create_app():
 
     app = Flask(__name__)
     CORS(app)
-    Swagger(app, template_file='docs/swagger.yml')
+    
+    Swagger(app, 
+            template_file='docs/swagger.yml',
+            config={
+                "specs_route": "/pets/imagesUpload-docs"
+            })
 
     app.register_blueprint(image_bp, url_prefix='/pets/images')
 
