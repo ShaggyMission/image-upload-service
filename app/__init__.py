@@ -10,10 +10,19 @@ def create_app():
     app = Flask(__name__)
     CORS(app)
     
-    Swagger(app, 
+    Swagger(app,
             template_file='docs/swagger.yml',
             config={
-                "specs_route": "/pets/imagesUpload-docs"
+                "specs": [
+                    {
+                        "endpoint": 'apispec_1',
+                        "route": '/pets/imagesUpload-docs.json',
+                        "rule_filter": lambda rule: True,   
+                        "model_filter": lambda tag: True,     
+                    }
+                ],
+                "specs_route": "/pets/imagesUpload-docs",
+                "headers": []
             })
 
     app.register_blueprint(image_bp, url_prefix='/pets/images')
