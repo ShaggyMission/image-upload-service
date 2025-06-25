@@ -2,4 +2,5 @@ Flask
 boto3
 python-dotenv
 flasgger
+flask-cors
 pytest>=8.0.0
