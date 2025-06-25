@@ -2,3 +2,4 @@ Flask
 boto3
 python-dotenv
 flasgger
+pytest>=8.0.0
