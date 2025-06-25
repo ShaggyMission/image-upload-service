@@ -3,7 +3,7 @@ name: Image Upload Service CI/CD
 on:
   push:
     branches:
-      - main
+      - test
 
 jobs:
   test:
